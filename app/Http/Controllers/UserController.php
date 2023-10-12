@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Intervention\Image\Facades\Image;
 
 class UserController extends Controller
 {
@@ -53,16 +55,34 @@ class UserController extends Controller
         return redirect('/')->with('success', 'Thank you for creating an account.');
     }
 
-    public function viewProfile(User $user){
-        return view('profile-posts', ['username' => $user->username, 'posts' => $user->posts()->latest()->get(), 'postCount' => $user->posts()->count()]);
+    public function viewProfile(User $user)
+    {
+        return view('profile-posts', ['username' => $user->username, 'avatar' => $user->avatar, 'posts' => $user->posts()->latest()->get(), 'postCount' => $user->posts()->count()]);
     }
 
-    public function showAvatarForm(User $user){
+    public function showAvatarForm(User $user)
+    {
         return view('avatar-form');
     }
 
-    public function storeAvatar(Request $request, ){
-        $request->file('avatar')->store('avatar');
-        return 'avatar saved!';
+    public function storeAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => ['required', 'image', 'max:2000'],
+        ]);
+
+        $img = Image::make($request->file('avatar'))->fit(120)->encode('jpg');
+        $user  = auth()->user();
+        $filename = $user->id . '-' . uniqid() . '.jpg';
+
+        Storage::put('public/avatars/' . $filename, $img);
+        $oldAvatar = $user->avatar;
+        $user->avatar = $filename;
+        $user->save();
+        if($oldAvatar != '/fallback-avatar.jpg'){
+            Storage::delete(str_replace("/storage/", "public/", $oldAvatar));
+        }
+        // $request->file('avatar')->store('public/avatars');
+        return back()->with('success', 'Congratulations! Your avatar has been updated.');
     }
 }
