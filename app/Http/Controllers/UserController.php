@@ -2,14 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Follow;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\View;
 
 class UserController extends Controller
 {
+
+    private function getSharedData($user)
+    {
+        $currentlyFollowing = 0;
+
+        if (auth()->check()) {
+            $currentlyFollowing = Follow::where([['user_id', '=', auth()->user()->id], ['followeduser', '=', $user->id]])->count();
+        }
+
+        View::share('sharedData', ['currentlyFollowing' => $currentlyFollowing, 'avatar' => $user->avatar, 'username' => $user->username, 'postCount' => $user->posts()->count()]);
+    }
+
     public function logout()
     {
         auth()->logout();
@@ -55,9 +69,22 @@ class UserController extends Controller
         return redirect('/')->with('success', 'Thank you for creating an account.');
     }
 
-    public function viewProfile(User $user)
+    public function profile(User $user)
     {
-        return view('profile-posts', ['username' => $user->username, 'avatar' => $user->avatar, 'posts' => $user->posts()->latest()->get(), 'postCount' => $user->posts()->count()]);
+        $this->getSharedData($user);
+        return view('profile-posts', ['posts' => $user->posts()->latest()->get()]);
+    }
+
+    public function profileFollowers(User $user)
+    {
+        $this->getSharedData($user);
+        return view('profile-followers', ['posts' => $user->posts()->latest()->get()]);
+    }
+
+    public function profileFollowing(User $user)
+    {
+        $this->getSharedData($user);
+        return view('profile-following', ['posts' => $user->posts()->latest()->get()]);
     }
 
     public function showAvatarForm(User $user)
@@ -79,7 +106,7 @@ class UserController extends Controller
         $oldAvatar = $user->avatar;
         $user->avatar = $filename;
         $user->save();
-        if($oldAvatar != '/fallback-avatar.jpg'){
+        if ($oldAvatar != '/fallback-avatar.jpg') {
             Storage::delete(str_replace("/storage/", "public/", $oldAvatar));
         }
         // $request->file('avatar')->store('public/avatars');

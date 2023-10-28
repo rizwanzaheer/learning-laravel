@@ -44,4 +44,6 @@ Route::post('/removed-follow/{user:username}', [FollowController::class, 'remove
 
 // Profile related routes
 // username = look for the username field in database against the user
-Route::get('/profile/{user:username}', [UserController::class, 'viewProfile'])->middleware('mustBeLoggedIn');
+Route::get('/profile/{user:username}', [UserController::class, 'profile'])->middleware('mustBeLoggedIn');
+Route::get('/profile/{user:username}/followers', [UserController::class, 'profileFollowers']);
+Route::get('/profile/{user:username}/following', [UserController::class, 'profileFollowing']);
