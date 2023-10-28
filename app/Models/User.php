@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use PhpParser\Node\Expr\FuncCall;
 
 class User extends Authenticatable
 {
@@ -54,5 +55,12 @@ class User extends Authenticatable
     public function posts()
     {
         return $this->hasMany(Post::class, 'user_id'); // select * from posts where user_id = 1
+    }
+
+    public function followers(){
+        return $this->hasMany(Follow::class, 'followeduser'); // select * from posts where user_id = 1
+    }
+    public function followingTheseUsers(){
+        return $this->hasMany(Follow::class, 'user_id'); // select * from posts where user_id = 1
     }
 }
